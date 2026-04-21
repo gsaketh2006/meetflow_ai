@@ -1,0 +1,20 @@
+Meeting Title: Sprint Planning Meeting
+Date: April 25, 2024
+Participants: Ravi (PM), Sarah (UI/UX), James (Backend), Kiran (QA)
+
+Notes:
+Ravi emphasized that the dashboard UI needs to be completed by Monday. Sarah will take responsibility for this.
+
+James mentioned that API integration is still pending and he will complete it by Wednesday.
+
+Kiran said testing should begin by Thursday once the backend is ready.
+
+Ravi also pointed out that fixing the login bug is urgent and must be handled immediately by James.
+
+Sarah suggested improving dark mode support, but it is not a priority right now.
+
+Action Items:
+- Sarah to complete dashboard UI by Monday.
+- James to complete API integration by Wednesday.
+- Kiran to start testing by Thursday.
+- James to fix login bug ASAP.

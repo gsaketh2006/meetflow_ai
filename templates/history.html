@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History | MeetFlow AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar-custom">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a href="/dashboard" class="logo-text">🚀 MeetFlow AI</a>
+            <div class="nav-links d-none d-md-flex gap-4 align-items-center">
+                <a href="/dashboard" class="nav-link-custom">Dashboard</a>
+                <a href="/history" class="nav-link-custom active">History</a>
+                <div class="user-profile ms-3 d-flex align-items-center gap-2">
+                    <div class="avatar-sm">{{ user.email[0]|upper }}</div>
+                    <span class="small text-secondary">{{ user.email }}</span>
+                    <a href="/logout" class="btn-logout ms-2"><i class="fas fa-sign-out-alt"></i></a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-end mb-5">
+            <div>
+                <h1 class="fw-bold h2 mb-1">Action Plan History</h1>
+                <p class="text-secondary mb-0">Review all your previously saved meeting outcomes.</p>
+            </div>
+            <div class="text-secondary small">
+                Total Records: <b>{{ plans|length }}</b>
+            </div>
+        </div>
+
+        {% if plans %}
+        <div class="history-grid">
+            {% for plan in plans %}
+            <div class="glass p-4 history-card priority-{{ plan.priority|lower }} mb-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <span class="badge badge-{{ plan.priority|lower }} mb-2">{{ plan.priority }}</span>
+                        <h5 class="h6 fw-bold mb-1">{{ plan.task }}</h5>
+                        <p class="small text-secondary mb-0"><i class="fas fa-clock me-1"></i> {{ plan.created_at[:16].replace('T', ' ') }}</p>
+                    </div>
+                </div>
+                <div class="row g-3 pt-3 border-top border-secondary">
+                    <div class="col-6">
+                        <div class="small text-secondary mb-1">Assignee</div>
+                        <div class="small fw-bold"><i class="fas fa-user-circle me-1"></i> {{ plan.assignee }}</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="small text-secondary mb-1">Deadline</div>
+                        <div class="small fw-bold"><i class="fas fa-calendar-alt me-1"></i> {{ plan.deadline }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="glass p-5 text-center text-secondary">
+            <i class="fas fa-folder-open fa-4x mb-4 opacity-25"></i>
+            <h4>No records found</h4>
+            <p>Your saved action plans will appear here.</p>
+            <a href="/dashboard" class="btn btn-primary mt-3 px-4 rounded-pill">Create One Now</a>
+        </div>
+        {% endif %}
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | MeetFlow AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <!-- Styled Navbar -->
+    <nav class="navbar-custom">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a href="/dashboard" class="logo-text">🚀 MeetFlow AI</a>
+            <div class="nav-links d-none d-md-flex gap-4 align-items-center">
+                <a href="/dashboard" class="nav-link-custom active">Dashboard</a>
+                <a href="/history" class="nav-link-custom">History</a>
+                <div class="user-profile ms-3 d-flex align-items-center gap-2">
+                    <div class="avatar-sm">{{ user.email[0]|upper }}</div>
+                    <span class="small text-secondary">{{ user.email }}</span>
+                    <a href="/logout" class="btn-logout ms-2"><i class="fas fa-sign-out-alt"></i></a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container pt-4">
+        <!-- Dashboard Layout -->
+
+        <!-- Stats Overview -->
+        <div class="row g-4 mb-5 d-none" id="stats-overview">
+            <div class="col-md-4">
+                <div class="glass stat-card">
+                    <span class="stat-value" id="stat-total">0</span>
+                    <span class="stat-label">Tasks Identified</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="glass stat-card border-bottom-danger">
+                    <span class="stat-value text-danger" id="stat-high">0</span>
+                    <span class="stat-label">High Priority</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="glass stat-card">
+                    <span class="stat-value" id="stat-deadlines">0</span>
+                    <span class="stat-label">Deadlines Found</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Layout -->
+        <div class="dashboard-grid">
+            <!-- Left Sidebar Controls -->
+            <aside>
+                <div class="glass upload-card">
+                    <h4 class="h5 mb-3">Action Control</h4>
+                    <p class="text-secondary small mb-4">Upload meeting transcript (.txt)</p>
+                    
+                    <div id="drop-zone" class="drop-zone mb-4">
+                        <i class="fas fa-cloud-upload-alt fa-3x mb-3 text-primary"></i>
+                        <h6 class="mb-1">Drop file here</h6>
+                        <p class="small text-secondary">or click to browse</p>
+                        <input type="file" id="file-input" class="d-none" accept=".txt">
+                    </div>
+
+                    <button id="process-btn" class="btn btn-primary w-100 py-3 rounded-pill fw-bold disabled shadow-lg">
+                        <i class="fas fa-magic me-2"></i> Generate Plan
+                    </button>
+
+                    <div id="status-container" class="mt-4 d-none">
+                        <div class="progress mb-3" style="height: 6px;">
+                            <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: 0%"></div>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span id="status-text" class="small text-secondary">Initializing...</span>
+                            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                        </div>
+                    </div>
+
+                    <div id="ai-stats" class="mt-4 pt-4 border-top border-secondary d-none">
+                        <div class="d-flex justify-content-between small text-secondary mb-3 align-items-center">
+                            <span data-bs-toggle="tooltip" data-bs-placement="right" title="Calculated as average reliability across all tasks">
+                                Overall AI Confidence: <i class="fas fa-info-circle ms-1 small"></i>
+                            </span>
+                            <span class="text-white h5 mb-0 fw-bold" id="meta-confidence">0%</span>
+                        </div>
+                        <div class="d-flex justify-content-between small text-secondary mb-4">
+                            <span>Processing Time:</span>
+                            <span class="text-white fw-bold" id="meta-time">0s</span>
+                        </div>
+                        
+                        <!-- Confidence Legend -->
+                        <div class="confidence-legend">
+                            <div class="legend-item">
+                                <span class="legend-dot bg-success"></span>
+                                <span>High</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-dot bg-warning"></span>
+                                <span>Med</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-dot bg-danger"></span>
+                                <span>Low</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Task Feed -->
+            <main id="output-area">
+                <div class="glass p-5 text-center text-secondary" id="placeholder-view">
+                    <i class="fas fa-rocket fa-4x mb-4 opacity-25"></i>
+                    <h3>Ready for Actions</h3>
+                    <p>Upload a file to see AI-generated tasks.</p>
+                </div>
+                
+                <div id="task-feed" class="d-none">
+                    <!-- Controls and Filtering -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="mb-0 text-white fw-bold">Action Plan</h5>
+                        <div class="d-flex gap-2">
+                            <select id="confidence-filter" class="form-select form-select-sm glass text-white border-secondary" style="width: auto;">
+                                <option value="all">All Confidence</option>
+                                <option value="high">High (>80%)</option>
+                                <option value="medium">Medium (60-80%)</option>
+                            </select>
+                            <button id="sort-confidence" class="btn btn-sm glass text-white border-secondary">
+                                <i class="fas fa-sort-amount-down me-1"></i> Sort
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="section-high" class="task-section mb-4">
+                        <h6 class="text-danger mb-3"><i class="fas fa-fire me-2"></i> HIGH PRIORITY</h6>
+                        <div class="task-container"></div>
+                    </div>
+
+                    <div id="section-medium" class="task-section mb-4">
+                        <h6 class="text-warning mb-3"><i class="fas fa-bolt me-2"></i> MEDIUM PRIORITY</h6>
+                        <div class="task-container"></div>
+                    </div>
+
+                    <div id="section-low" class="task-section mb-4">
+                        <h6 class="text-success mb-3"><i class="fas fa-check-circle me-2"></i> LOW PRIORITY</h6>
+                        <div class="task-container"></div>
+                    </div>
+
+                    <div class="d-flex gap-3 border-top border-secondary pt-4 mt-4">
+                        <button id="save-btn" class="btn btn-success flex-grow-1 py-3 rounded-pill fw-bold shadow-lg">
+                            <i class="fas fa-save me-2"></i> Save to Database
+                        </button>
+                        <button id="export-btn" class="btn btn-outline-secondary px-4 rounded-pill">
+                            <i class="fas fa-file-export"></i>
+                        </button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
