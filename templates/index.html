@@ -204,6 +204,16 @@
     draw();
 })();
 
+/* ══ Navbar Scroll Effect ══ */
+window.addEventListener('scroll', () => {
+    const nav = document.querySelector('.navbar-custom');
+    if (window.scrollY > 20) {
+        nav.classList.add('scrolled');
+    } else {
+        nav.classList.remove('scrolled');
+    }
+});
+
 /* ══ Panel Toggle ══ */
 function switchPanel(which) {
     const lp  = document.getElementById('login-panel');

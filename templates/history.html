@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
+<body class="animate-fade-in">
 
     <!-- Navbar -->
     <nav class="navbar-custom">
@@ -26,50 +26,148 @@
         </div>
     </nav>
 
-    <div class="container py-5">
-        <div class="d-flex justify-content-between align-items-end mb-5">
-            <div>
-                <h1 class="fw-bold h2 mb-1">Action Plan History</h1>
-                <p class="text-secondary mb-0">Review all your previously saved meeting outcomes.</p>
+    <div class="container py-5 mt-4">
+        
+        <!-- Header -->
+        <div class="mb-5 text-center text-md-start">
+            <h1 class="gradient-accent fw-900 h1 mb-1">History</h1>
+            <p class="text-secondary">Previously generated action plans and meeting outcomes.</p>
+        </div>
+
+        <!-- Summary Section -->
+        <div class="history-summary-grid">
+            <div class="glass summary-card">
+                <div class="summary-icon"><i class="fas fa-tasks"></i></div>
+                <span class="summary-value" id="summary-total-tasks">{{ total_tasks }}</span>
+                <span class="summary-label">Total Tasks</span>
             </div>
-            <div class="text-secondary small">
-                Total Records: <b>{{ plans|length }}</b>
+            <div class="glass summary-card">
+                <div class="summary-icon text-danger"><i class="fas fa-fire"></i></div>
+                <span class="summary-value" id="summary-high-priority">0</span>
+                <span class="summary-label">High Priority</span>
+            </div>
+            <div class="glass summary-card">
+                <div class="summary-icon text-warning"><i class="fas fa-clock"></i></div>
+                <span class="summary-value" id="summary-due-soon">0</span>
+                <span class="summary-label">Due Soon</span>
             </div>
         </div>
 
-        {% if plans %}
-        <div class="history-grid">
-            {% for plan in plans %}
-            <div class="glass p-4 history-card priority-{{ plan.priority|lower }} mb-4">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div>
-                        <span class="badge badge-{{ plan.priority|lower }} mb-2">{{ plan.priority }}</span>
-                        <h5 class="h6 fw-bold mb-1">{{ plan.task }}</h5>
-                        <p class="small text-secondary mb-0"><i class="fas fa-clock me-1"></i> {{ plan.created_at[:16].replace('T', ' ') }}</p>
-                    </div>
+        <!-- Filter & Search Bar -->
+        <div class="glass p-3 mb-4">
+            <div class="filter-bar">
+                <div class="search-input-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="history-search" class="form-control glass" placeholder="Search tasks or assignees...">
                 </div>
-                <div class="row g-3 pt-3 border-top border-secondary">
-                    <div class="col-6">
-                        <div class="small text-secondary mb-1">Assignee</div>
-                        <div class="small fw-bold"><i class="fas fa-user-circle me-1"></i> {{ plan.assignee }}</div>
-                    </div>
-                    <div class="col-6">
-                        <div class="small text-secondary mb-1">Deadline</div>
-                        <div class="small fw-bold"><i class="fas fa-calendar-alt me-1"></i> {{ plan.deadline }}</div>
-                    </div>
+                
+                <div class="filter-tabs" id="priority-tabs">
+                    <button class="tab-item active" data-priority="all">All</button>
+                    <button class="tab-item" data-priority="high">High</button>
+                    <button class="tab-item" data-priority="medium">Medium</button>
+                    <button class="tab-item" data-priority="low">Low</button>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <select id="filter-date" class="form-select glass filter-select py-2">
+                        <option value="latest">Latest First</option>
+                        <option value="oldest">Oldest First</option>
+                    </select>
+                    <button id="reset-filters" class="btn btn-outline-secondary rounded-pill px-3 py-2 small" title="Reset All">
+                        <i class="fas fa-undo"></i>
+                    </button>
                 </div>
             </div>
-            {% endfor %}
         </div>
-        {% else %}
-        <div class="glass p-5 text-center text-secondary">
-            <i class="fas fa-folder-open fa-4x mb-4 opacity-25"></i>
-            <h4>No records found</h4>
-            <p>Your saved action plans will appear here.</p>
-            <a href="/dashboard" class="btn btn-primary mt-3 px-4 rounded-pill">Create One Now</a>
+
+        <!-- Tasks Container -->
+        <div id="history-content">
+            {% if grouped_plans %}
+                {% for date in sorted_dates %}
+                    <div class="date-section" data-date="{{ date }}">
+                        <div class="date-group-header" onclick="toggleDateGroup('{{ date }}')">
+                            <div class="date-header-left">
+                                <i class="fas fa-calendar-day"></i>
+                                <span>{{ date }}</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge bg-secondary opacity-50 rounded-pill">{{ grouped_plans[date]|length }}</span>
+                                <i class="fas fa-chevron-down collapse-icon"></i>
+                            </div>
+                        </div>
+                        <div class="date-group-content" id="content-{{ date }}">
+                            {% for plan in grouped_plans[date] %}
+                            <div class="glass history-card compact priority-{{ plan.priority|lower }} mb-3 animate-slide-up task-item" 
+                                 data-task="{{ plan.task|lower }}" 
+                                 data-assignee="{{ plan.assignee|lower }}" 
+                                 data-priority="{{ plan.priority|lower }}"
+                                 data-date="{{ date }}"
+                                 id="task-{{ plan.id }}">
+                                
+                                <div class="card-main-info">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="badge badge-{{ plan.priority|lower }}">{{ plan.priority }}</span>
+                                        <span class="small text-secondary"><i class="fas fa-clock me-1"></i> {{ plan.created_at[11:16] }}</span>
+                                    </div>
+                                    <h6 class="fw-bold mb-0 text-truncate" title="{{ plan.task }}">{{ plan.task }}</h6>
+                                </div>
+
+                                <div class="card-meta-info d-none d-lg-flex">
+                                    <div class="meta-item">
+                                        <span class="meta-label">Assignee</span>
+                                        <span class="meta-value"><i class="fas fa-user-circle me-1 text-primary"></i> {{ plan.assignee }}</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <span class="meta-label">Deadline</span>
+                                        <span class="meta-value text-{{ 'warning' if 'today' in plan.deadline.lower() or 'tomorrow' in plan.deadline.lower() else 'secondary' }}">
+                                            <i class="fas fa-calendar-alt me-1"></i> {{ plan.deadline }}
+                                        </span>
+                                    </div>
+                                    <div class="meta-item confidence-mini">
+                                        <span class="meta-label">AI Conf.</span>
+                                        <div class="confidence-bar-bg" style="height: 4px;">
+                                            {% set conf = (plan.confidence|default(0.7) * 100)|int %}
+                                            {% set color = 'conf-low' %}
+                                            {% if conf >= 80 %}{% set color = 'conf-high' %}
+                                            {% elif conf >= 60 %}{% set color = 'conf-medium' %}{% endif %}
+                                            <div class="confidence-bar-fill {{ color }}" style="width: {{ conf }}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button class="delete-btn" onclick="deleteTask('{{ plan.id }}')" title="Delete Task">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div> <!-- end date-group-content -->
+                    </div> <!-- end date-section -->
+                {% endfor %}
+            {% else %}
+                <div class="glass p-5 text-center text-secondary empty-state animate-fade-in">
+                    <i class="fas fa-folder-open fa-4x mb-4 opacity-25"></i>
+                    <h4>No history found</h4>
+                    <p>Your saved meeting tasks will appear here organized by date.</p>
+                    <a href="/dashboard" class="btn btn-primary mt-3 px-4 rounded-pill">Start New Session</a>
+                </div>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
 
+    <!-- History Logic -->
+    <script src="{{ url_for('static', filename='js/history.js') }}"></script>
+    <script>
+        // Inline stats calculation
+        document.addEventListener('DOMContentLoaded', () => {
+            const highPriorityCount = document.querySelectorAll('.task-item[data-priority="high"]').length;
+            const dueSoonCount = Array.from(document.querySelectorAll('.task-item')).filter(el => {
+                const deadline = el.innerText.toLowerCase();
+                return deadline.includes('today') || deadline.includes('tomorrow');
+            }).length;
+            
+            document.getElementById('summary-high-priority').innerText = highPriorityCount;
+            document.getElementById('summary-due-soon').innerText = dueSoonCount;
+        });
+    </script>
 </body>
 </html>

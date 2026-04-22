@@ -1,0 +1,21 @@
+Meeting Title: Product Development Sync
+Date: April 21, 2026
+Participants: Sarah (UI), James (Backend), Kiran (QA)
+
+Notes:
+Sarah mentioned that the dashboard UI needs to be completed by Monday.
+
+James said the login bug is critical and must be fixed immediately.
+
+Kiran will start testing by Thursday once the main features are ready.
+
+James also confirmed that API integration will be completed by Wednesday.
+
+The team discussed improving dark mode support, but it is not urgent.
+
+Action Items:
+- Sarah to complete dashboard UI by Monday.
+- James to fix login bug ASAP.
+- Kiran to start testing by Thursday.
+- James to complete API integration by Wednesday.
+- Team to improve dark mode support (low priority).

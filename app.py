@@ -110,12 +110,29 @@ def history():
     user_id = session['user']['id']
     try:
         db = get_authed_client()
+        # Fetch all tasks for the user, ordered by date descending
         res = db.table('action_plans').select("*").eq('user_id', user_id).order('created_at', desc=True).execute()
         plans = res.data
-        return render_template('history.html', plans=plans, user=session['user'])
+        
+        # Group tasks by date (YYYY-MM-DD)
+        grouped_plans = {}
+        for plan in plans:
+            date_key = plan['created_at'][:10]
+            if date_key not in grouped_plans:
+                grouped_plans[date_key] = []
+            grouped_plans[date_key].append(plan)
+            
+        # Get sorted dates (latest first)
+        sorted_dates = sorted(grouped_plans.keys(), reverse=True)
+        
+        return render_template('history.html', 
+                               grouped_plans=grouped_plans, 
+                               sorted_dates=sorted_dates, 
+                               user=session['user'],
+                               total_tasks=len(plans))
     except Exception as e:
         logger.error(f"History fetch error: {str(e)}")
-        return render_template('history.html', plans=[], error=str(e), user=session['user'])
+        return render_template('history.html', grouped_plans={}, sorted_dates=[], error=str(e), user=session['user'], total_tasks=0)
 
 def calculate_confidence(task_obj):
     """
@@ -226,6 +243,19 @@ def save_tasks():
         return jsonify({"success": True})
     except Exception as e:
         logger.error(f"DB insert error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/delete_task/<task_id>', methods=['DELETE'])
+@login_required
+def delete_task(task_id):
+    user_id = session['user']['id']
+    try:
+        db = get_authed_client()
+        # Use task_id as string/id directly to support both bigint and uuid
+        res = db.table('action_plans').delete().eq('id', task_id).eq('user_id', user_id).execute()
+        return jsonify({"success": True})
+    except Exception as e:
+        logger.error(f"Delete error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':

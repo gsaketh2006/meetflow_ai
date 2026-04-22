@@ -250,6 +250,47 @@ document.addEventListener("DOMContentLoaded", () => {
         processBtn.classList.remove("disabled");
         progressBar.style.width = "0%";
     }
+
+    const fullReset = () => {
+        // Clear state
+        currentTasks = [];
+        fileInput.value = "";
+        
+        // Reset Drop Zone
+        dropZone.innerHTML = `
+            <i class="fas fa-cloud-upload-alt fa-3x mb-3 text-primary"></i>
+            <h6 class="mb-1">Drop file here</h6>
+            <p class="small text-secondary">or click to browse</p>
+        `;
+        
+        // Hide/Show areas
+        taskFeed.classList.add("d-none");
+        aiStats.classList.add("d-none");
+        document.getElementById("stats-overview").classList.add("d-none");
+        placeholder.classList.remove("d-none");
+        statusContainer.classList.add("d-none");
+        
+        // Reset buttons
+        processBtn.classList.add("disabled");
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fas fa-save me-2"></i> Save to Database';
+        saveBtn.className = "btn btn-success flex-grow-1 py-3 rounded-pill fw-bold shadow-lg";
+        
+        // Reset stats
+        document.getElementById("stat-total").innerText = "0";
+        document.getElementById("stat-high").innerText = "0";
+        document.getElementById("stat-deadlines").innerText = "0";
+        
+        // Reset progress bar
+        progressBar.style.width = "0%";
+        
+        // Scroll to top smoothly
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // Attach Refresh Listeners
+    document.getElementById("refresh-btn")?.addEventListener("click", fullReset);
+    document.getElementById("reset-dashboard-sidebar")?.addEventListener("click", fullReset);
     
     // Export functionality
     document.getElementById("export-btn")?.addEventListener("click", () => {
