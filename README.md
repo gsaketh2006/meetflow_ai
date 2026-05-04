@@ -110,13 +110,3 @@ Run the contents of `migration.sql` in your Supabase SQL Editor to prepare the `
 - **Task:** Check the budget | **Assignee:** Sarah | **Deadline:** Next week | **Priority:** Medium | **Confidence:** 85%
 
 ---
-
-## 🤝 Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-Developed for **Enterprise Productivity & AI Innovation**.
-
