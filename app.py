@@ -117,7 +117,12 @@ def history():
         # Group tasks by date (YYYY-MM-DD)
         grouped_plans = {}
         for plan in plans:
-            date_key = plan['created_at'][:10]
+            created_at = plan.get('created_at')
+            if not created_at or len(created_at) < 10:
+                date_key = "Unknown Date"
+            else:
+                date_key = created_at[:10]
+                
             if date_key not in grouped_plans:
                 grouped_plans[date_key] = []
             grouped_plans[date_key].append(plan)
@@ -162,8 +167,12 @@ def calculate_confidence(task_obj):
         score += 0.1
         
     # AI Refinement (from updated LLM prompt)
-    ai_refinement = task_obj.get('ai_confidence_refinement', 0.0)
-    score += float(ai_refinement)
+    ai_refinement = task_obj.get('ai_confidence_refinement')
+    if ai_refinement is not None:
+        try:
+            score += float(ai_refinement)
+        except (ValueError, TypeError):
+            pass
     
     return min(1.0, round(score, 2))
 

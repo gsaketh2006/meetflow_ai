@@ -1,0 +1,229 @@
+# project.txt - MeetFlow AI: Notes-to-Action Assistant
+
+---
+
+### 1. Project Overview
+
+**MeetFlow AI** is a sophisticated, AI-powered meeting productivity tool designed to transform raw, messy meeting notes into structured, actionable plans. By leveraging Large Language Models (LLMs), the application automatically identifies specific tasks, assigns them to team members, detects deadlines, and categorizes them by priority. It provides a seamless transition from a text transcript to a sprint-ready action plan, ensuring that no critical point is forgotten after a meeting.
+
+**Core Idea:**
+- **Automated Extraction:** No more manual note-taking for action items.
+- **Structured Data:** Converts unstructured text into JSON-formatted tasks.
+- **Accountability:** Clearly identifies "Who" does "What" by "When".
+- **Visual Clarity:** Uses a premium "Glassmorphism" dashboard to organize tasks by priority.
+
+---
+
+### 2. Complete Workflow (Step-by-Step Execution)
+
+1.  **Authentication:** The user starts by landing on the index page where they can Register or Login. Authentication is handled securely via **Supabase Auth**.
+2.  **Dashboard Access:** Once logged in, the user is redirected to the Dashboard, which serves as the command center for processing notes.
+3.  **File Upload:** The user uploads a meeting transcript in `.txt` format via a drag-and-drop zone or file browser.
+4.  **Backend Processing:**
+    *   The file is sent to the `/upload_notes` endpoint in `app.py`.
+    *   The server saves the file temporarily and reads its content.
+    *   The `MeetFlowAgent` (from `llm_agent.py`) is invoked to process the text.
+5.  **LLM Analysis:** 
+    *   The agent sends the notes to the **Groq API (Llama 3 model)** with a specialized "System Prompt".
+    *   The LLM analyzes the text and returns a strictly formatted JSON object containing extracted tasks.
+6.  **Confidence Calculation:**
+    *   The backend runs a hybrid logic function `calculate_confidence()` to score the reliability of each extracted task based on factors like detected deadlines, assignees, and AI-provided refinement scores.
+7.  **Frontend Visualization:**
+    *   The processed tasks are sent back to the browser as a JSON response.
+    *   `script.js` dynamically renders these tasks into three sections: **High, Medium, and Low Priority**.
+    *   A "Confidence Bar" is shown for each task to indicate AI certainty.
+8.  **Persistence:** The user can click "Save to Database" to permanently store the action plan in **Supabase DB**.
+9.  **History Management:** Users can visit the `/history` page to view, search, filter, or delete previously generated tasks.
+
+---
+
+### 3. Folder Structure (From Given Code)
+
+*   **app.py**: The main Flask server handling routes, file uploads, and business logic.
+*   **llm_agent.py**: The core AI module that communicates with the Groq LLM.
+*   **tools.py**: A collection of utility functions for text analysis (SpaCy, Regex, Dateparsing).
+*   **supabase_client.py**: Configuration and initialization of the Supabase database client.
+*   **utils.py**: Helper functions for logging and configuration validation.
+*   **migration.sql**: SQL script to set up the database tables in Supabase.
+*   **requirements.txt**: List of Python dependencies (Flask, Groq, Supabase, SpaCy, etc.).
+*   **templates/**:
+    *   `index.html`: The landing page with Login/Register forms.
+    *   `dashboard.html`: The main interface for uploading and viewing AI results.
+    *   `history.html`: The user's archive of saved tasks.
+    *   `login.html` / `register.html`: Auth pages.
+*   **static/**:
+    *   `css/`: Contains `style.css` (UI theme) and `landing.css` (Hero animations).
+    *   `js/`: Contains `script.js` (Dashboard logic) and `history.js` (History management).
+*   **uploads/**: A temporary directory for storing uploaded files during processing.
+
+---
+
+### 4. File-by-File Explanation (VERY DETAILED)
+
+#### File Name: app.py
+*   **Purpose:** This is the heart of the application. It acts as the "Orchestrator".
+*   **Responsibility:** 
+    *   Managing user sessions and authentication.
+    *   Handling file uploads and security.
+    *   Connecting the frontend requests to the AI agent.
+    *   Executing database operations (Save/Delete).
+    *   Calculating the "Confidence Score" for each task.
+
+#### File Name: llm_agent.py
+*   **Purpose:** Specialized interface for the Large Language Model.
+*   **Responsibility:** 
+    *   Constructing the complex system prompts for the AI.
+    *   Interfacing with the Groq SDK to get high-speed AI completions.
+    *   Enforcing JSON-only responses from the AI for programmatic use.
+    *   Error handling for API failures or malformed AI output.
+
+#### File Name: tools.py
+*   **Purpose:** Provides supplementary NLP and Regex tools.
+*   **Responsibility:** 
+    *   Detecting names (assignees) using the SpaCy NLP model.
+    *   Finding dates and timeframes using `dateparser`.
+    *   Identifying keywords like "ASAP" or "Urgent" via Regex to determine priority.
+
+#### File Name: supabase_client.py
+*   **Purpose:** Database connectivity.
+*   **Responsibility:** Initializes the connection to the Supabase backend using environment variables (`SUPABASE_URL` and `SUPABASE_KEY`).
+
+#### File Name: utils.py
+*   **Purpose:** System utilities.
+*   **Responsibility:** 
+    *   Standardizing logging across the project so developers can track errors.
+    *   Validating that all required API keys are present before the app starts.
+
+---
+
+### 5. Function-by-Function Breakdown
+
+#### Function: login_required (app.py)
+*   **What it does:** A "decorator" that protects certain pages.
+*   **Why used:** To ensure only logged-in users can see the Dashboard or History.
+*   **Logic:** It checks if 'user' exists in the session. If not, it redirects to the login page.
+
+#### Function: calculate_confidence (app.py)
+*   **What it does:** Calculates a score (0.0 to 1.0) for each task.
+*   **Input:** `task_obj` (The task data from AI).
+*   **Output:** A float value representing confidence.
+*   **Logic:** 
+    1.  Starts with a base of 0.6.
+    2.  Adds 0.1 if a task description exists.
+    3.  Adds 0.1 if a valid deadline is found.
+    4.  Adds 0.1 if a specific person (not 'Team') is assigned.
+    5.  Adds 0.1 for 'High' priority.
+    6.  Adds a small refinement value (0.0 to 0.1) provided by the AI itself.
+
+#### Function: upload_notes (app.py - POST /upload_notes)
+*   **What it does:** Processes the uploaded `.txt` file.
+*   **Logic:** 
+    1.  Receives file via POST request.
+    2.  Reads the text content.
+    3.  Calls `agent.process_notes(notes_text)`.
+    4.  Iterates through resulting tasks and attaches confidence scores.
+    5.  Returns JSON with tasks, overall confidence, and processing time.
+
+#### Function: save_tasks (app.py - POST /save_tasks)
+*   **What it does:** Saves tasks to Supabase.
+*   **Logic:** Prepares a list of task objects with the current `user_id` and performs a bulk insert into the `action_plans` table.
+
+#### Function: process_notes (llm_agent.py)
+*   **What it does:** The main AI logic.
+*   **Logic:** 
+    1.  Defines a "System Prompt" that tells the AI to be a Senior Project Manager and output ONLY JSON.
+    2.  Sends the user's notes to Groq.
+    3.  Parses the JSON response.
+    4.  Normalizes priority labels (e.g., making sure "high" becomes "High").
+
+#### Function: extract_tasks (tools.py)
+*   **What it does:** A keyword-based fallback for finding tasks.
+*   **Logic:** Splits text into lines and looks for "need to", "must", or bullet points like "-" or "*".
+
+#### Function: identify_deadlines (tools.py)
+*   **What it does:** Finds dates in text.
+*   **Logic:** Uses `dateparser.search` to find strings that look like dates and converts them to a standard YYYY-MM-DD format.
+
+---
+
+### 6. LLM Integration Details
+
+*   **Provider:** Groq (High-performance inference).
+*   **Model:** `llama-3.3-70b-versatile`.
+*   **Prompt Structure:** The system prompt is the "Brain" of the extraction. It contains:
+    *   **Role definition:** "Expert senior project manager".
+    *   **Format constraint:** "MUST respond ONLY with a valid JSON object".
+    *   **Extraction Guidelines:** Specific rules for deadlines, priorities, and confidence refinement.
+*   **Processing:** The code uses `response_format={"type": "json_object"}` which is a native model feature to guarantee that the AI output is valid JSON, preventing the app from crashing on bad data.
+
+---
+
+### 7. Tool Functions Analysis
+
+*   **extract_tasks():** Uses **Keyword Matching**. It is very fast but less "smart" than the LLM. It acts as a baseline to ensure nothing obvious is missed.
+*   **identify_deadlines():** Uses **Date Parsing Libraries**. It is highly accurate for specific dates (e.g., "April 26") and relative dates (e.g., "next Wednesday").
+*   **extract_assignees():** Uses **Named Entity Recognition (NER)** via SpaCy. It looks for "PERSON" entities in the text to identify who is being talked about.
+*   **detect_priority():** Uses **Heuristic Matching**. It searches for "urgency" keywords.
+
+---
+
+### 8. Data Flow Diagram (Text Explanation)
+
+1.  **User Input:** User uploads a transcript on the Dashboard.
+2.  **API Layer:** `app.py` receives the file and extracts the text.
+3.  **Agent Layer:** `llm_agent.py` sends the text + instructions to Groq.
+4.  **AI Engine:** Llama 3 processes the meeting logic and identifies tasks.
+5.  **Refinement:** Backend calculates confidence and organizes by priority.
+6.  **UI Display:** `script.js` renders the task cards with animations.
+7.  **Storage:** User saves tasks to the Supabase Postgres database.
+
+---
+
+### 9. Sample Execution
+
+*   **Input Notes:** "Meeting at 2 PM. John needs to finish the API docs by Friday. This is urgent. Sarah will check the budget next week."
+*   **Processing:** The LLM identifies two tasks.
+*   **Output JSON:**
+    *   Task 1: "Finish API docs", Assignee: "John", Deadline: "Friday", Priority: "High", Confidence: 95%.
+    *   Task 2: "Check the budget", Assignee: "Sarah", Deadline: "Next week", Priority: "Medium", Confidence: 85%.
+*   **Final Display:** Two cards appear in the dashboard—one red (High) and one orange (Medium).
+
+---
+
+### 10. Key Features (From Code Only)
+
+*   **User Auth:** Login and Sign-up via Supabase.
+*   **Smart Dashboard:** Drag-and-drop file processing.
+*   **AI Confidence Indicator:** Visual progress bars showing AI certainty.
+*   **Priority Categorization:** Automatic sorting into High/Medium/Low buckets.
+*   **Task History:** A dedicated page to view and manage past meeting outcomes.
+*   **Search & Filter:** Find specific tasks by name or filter by confidence level.
+
+---
+
+### 11. Strengths of Implementation
+
+*   **Premium UI:** Uses "Glassmorphism" (semi-transparent blurred backgrounds) and smooth CSS animations for a modern feel.
+*   **Hybrid Scoring:** Doesn't just trust the AI blindly; it verifies the AI's work with local logic to calculate a "Confidence Score".
+*   **Scalability:** Uses Supabase for the backend, making it ready to handle many users.
+*   **Developer Friendly:** Robust logging and configuration validation make it easy to debug.
+
+---
+
+### 12. Limitations (Based on Code)
+
+*   **File Support:** Currently only supports `.txt` files; cannot process PDFs or Audio directly.
+*   **Hardcoded Keywords:** Some priority detection in `tools.py` relies on a fixed list of words.
+*   **Context Limit:** Very long meeting notes (e.g., 2-hour transcripts) might hit LLM token limits (though 2048 tokens is usually plenty for most notes).
+
+---
+
+### 13. Suggestions for Improvement
+
+*   **Voice-to-Text:** Integrate a tool like OpenAI Whisper to allow users to upload audio recordings directly.
+*   **PDF Parsing:** Add a library like `PyPDF2` to support PDF meeting minutes.
+*   **Calendar Sync:** Add a button to "Add to Google Calendar" for tasks with detected deadlines.
+*   **Email Summary:** Automatically email the generated action plan to all detected assignees.
+
+---
+**End of Project Documentation**
